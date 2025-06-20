@@ -75,7 +75,9 @@ data_collator = DataCollatorWithPadding(tokenizer)
 # ─── 4) BASELINE TRAINER ──────────────────────────────────────────────────────
 model = DistilBertForSequenceClassification.from_pretrained(
     "distilbert-base-uncased",
-    num_labels=2,
+    num_labels=len(EMOTION_LABELS),
+    id2label=id2label,
+    label2id=label2id,
 )
 
 training_args = TrainingArguments(
