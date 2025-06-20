@@ -14,8 +14,8 @@ from torch.nn import CrossEntropyLoss
 
 # ─── 1) CONFIG & DEVICE ───────────────────────────────────────────────────────
 CSV_PATH = "expanded_equity_corpus.csv"
-EMOTION_LABELS = ["anger", "sadness", "fear", "joy"]
-label2id = {lab: i for i, lab in enumerate(EMOTION_LABELS)}
+EMOTION_LABELS = ["NEGATIVE", "POSITIVE"]
+label2id = {lab: i for i, lab in enumerate(SENTIMENT_LABELS)}
 id2label = {i: lab for lab, i in label2id.items()}
 
 device_id = 0 if torch.cuda.is_available() else -1
@@ -26,6 +26,16 @@ print("Using GPU" if device_id >= 0 else "Using CPU")
 df = pd.read_csv(CSV_PATH).dropna(subset=["Emotion"])
 df = df[~df["Person"].isin(["she", "he", "him", "her"])].copy()
 df["group_id"] = df["Race"]
+df["sentiment"] = df["Emotion"].apply(lambda x: "POSITIVE" if x == "joy" else "NEGATIVE")
+
+# Define the persons to use for testing
+test_persons = ["Alia", "Diego", "Jasmine"]
+
+# Create test set
+test_df = df[df["Person"].isin(test_persons)].copy()
+
+# Create remaining data for training/validation
+df = df[~df["Person"].isin(test_persons)].copy()
 
 train_df, val_df = train_test_split(
     df,
@@ -62,7 +72,7 @@ class EmotionDataset(Dataset):
         return {
             "input_ids":      torch.tensor(toks["input_ids"], dtype=torch.long),
             "attention_mask": torch.tensor(toks["attention_mask"], dtype=torch.long),
-            "labels":         torch.tensor(self.label2id[row["Emotion"]], dtype=torch.long),
+            "labels":         torch.tensor(self.label2id[row["sentiment"]], dtype=torch.long),
             "group_id":       row["group_id"],  # passed through for reweighting
         }
 
@@ -119,12 +129,32 @@ sent_pipe = pipeline(
 )
 
 results = sent_pipe(all_df["Sentence"].tolist(), batch_size=64)
-all_df["Predicted"] = [r["label"] for r in results]
+all_df["Predicted_Sentiment"] = [r["label"] for r in results]
 
-print(all_df[["Sentence", "Emotion", "Predicted"]])
-print("\nOverall accuracy:",
-      (all_df["Emotion"] == all_df["Predicted"]).mean())
+# Accuracy check (optional)
+print("\nOverall sentiment accuracy:",
+      (all_df["sentiment"] == all_df["Predicted_Sentiment"]).mean())
+#------------    
+df4 = all_df[["Race", "Emotion", "Predicted_Sentiment"]].rename(columns={"Predicted_Sentiment": "Sentiment"})
 
+# Group and reshape
+test = df4.groupby(["Race", "Emotion", "Sentiment"]).size().unstack(fill_value=0)
+
+# Sort by Race and Emotion
+test = test.sort_values(by=["Race", "Emotion"], ascending=[True, True])
+
+print(test)
+
+print("test set: ........")
+results = sent_pipe(test_df["Sentence"].tolist(), batch_size=64)
+test_df["Predicted_Sentiment"] = [r["label"] for r in results]
+
+df5 = test_df[["Race", "Emotion", "Predicted_Sentiment"]].rename(columns={"Predicted_Sentiment": "Sentiment"})
+test = df5.groupby(["Race", "Emotion", "Sentiment"]).size().unstack(fill_value=0)
+test = test.sort_values(by=["Race", "Emotion"], ascending=[True, True])
+
+print(test)
+"""
 # ─── 5) COMPUTE GROUP×EMOTION WEIGHTS ─────────────────────────────────────────
 # count occurrences in training set
 count_series = train_df.groupby(["group_id", "Emotion"]).size()
@@ -183,4 +213,4 @@ rew_trainer.train()
 
 rew_trainer.save_model("saved_models/emotion_reweighted")
 
-
+"""
