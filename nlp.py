@@ -15,7 +15,7 @@ from torch.nn import CrossEntropyLoss
 # ─── 1) CONFIG & DEVICE ───────────────────────────────────────────────────────
 CSV_PATH = "expanded_equity_corpus.csv"
 EMOTION_LABELS = ["NEGATIVE", "POSITIVE"]
-label2id = {lab: i for i, lab in enumerate(SENTIMENT_LABELS)}
+label2id = {lab: i for i, lab in enumerate(EMOTION_LABELS)}
 id2label = {i: lab for lab, i in label2id.items()}
 
 device_id = 0 if torch.cuda.is_available() else -1
@@ -113,8 +113,8 @@ trainer = Trainer(
 print("=== Starting baseline training ===")
 trainer.train()
 
-trainer.save_model("saved_models/emotion_baseline")
-tokenizer.save_pretrained("saved_models/emotion_baseline")
+trainer.save_model("saved_models/baseline_model")
+tokenizer.save_pretrained("saved_models/emotion_baseline_tokenizer")
 
 print("=== Done ===")
 
