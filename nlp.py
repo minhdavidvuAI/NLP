@@ -13,7 +13,7 @@ from transformers import (
 from torch.nn import CrossEntropyLoss
 
 # ─── 1) CONFIG & DEVICE ───────────────────────────────────────────────────────
-CSV_PATH = "/kaggle/input/expanded-equity-corpus4-csv/expanded_equity_corpus.csv"
+CSV_PATH = "expanded_equity_corpus.csv"
 EMOTION_LABELS = ["anger", "sadness", "fear", "joy"]
 label2id = {lab: i for i, lab in enumerate(EMOTION_LABELS)}
 id2label = {i: lab for lab, i in label2id.items()}
@@ -75,17 +75,16 @@ data_collator = DataCollatorWithPadding(tokenizer)
 # ─── 4) BASELINE TRAINER ──────────────────────────────────────────────────────
 model = DistilBertForSequenceClassification.from_pretrained(
     "distilbert-base-uncased",
-    num_labels=len(EMOTION_LABELS),
-    id2label=id2label,
-    label2id=label2id,
+    num_labels=2,
 )
 
 training_args = TrainingArguments(
     output_dir="runs/emotion_baseline",
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",
+    learning_rate=5e-5,
     per_device_train_batch_size=32,
     per_device_eval_batch_size=64,
-    num_train_epochs=3,
+    num_train_epochs=5,
     weight_decay=0.01,
     logging_steps=50,
 )
@@ -102,6 +101,27 @@ trainer = Trainer(
 print("=== Starting baseline training ===")
 trainer.train()
 
+trainer.save_model("saved_models/emotion_baseline")
+tokenizer.save_pretrained("saved_models/emotion_baseline")
+
+print("=== Done ===")
+
+# ─── 8) INFERENCE ON ALL SENTENCES ────────────────────────────────────────────
+all_df = df.reset_index(drop=True)
+
+sent_pipe = pipeline(
+    "sentiment-analysis",
+    model=trainer.model,
+    tokenizer=tokenizer,
+    device=device_id,
+)
+
+results = sent_pipe(all_df["Sentence"].tolist(), batch_size=64)
+all_df["Predicted"] = [r["label"] for r in results]
+
+print(all_df[["Sentence", "Emotion", "Predicted"]])
+print("\nOverall accuracy:",
+      (all_df["Emotion"] == all_df["Predicted"]).mean())
 
 # ─── 5) COMPUTE GROUP×EMOTION WEIGHTS ─────────────────────────────────────────
 # count occurrences in training set
@@ -158,25 +178,7 @@ rew_trainer.train()
 
 
 # ─── 7) SAVE ARTIFACTS ────────────────────────────────────────────────────────
-trainer.save_model("saved_models/emotion_baseline")
-tokenizer.save_pretrained("saved_models/emotion_baseline")
 
 rew_trainer.save_model("saved_models/emotion_reweighted")
 
 
-# ─── 8) INFERENCE ON ALL SENTENCES ────────────────────────────────────────────
-all_df = df.reset_index(drop=True)
-
-sent_pipe = pipeline(
-    "sentiment-analysis",
-    model=trainer.model,
-    tokenizer=tokenizer,
-    device=device_id,
-)
-
-results = sent_pipe(all_df["Sentence"].tolist(), batch_size=64)
-all_df["Predicted"] = [r["label"] for r in results]
-
-print(all_df[["Sentence", "Emotion", "Predicted"]].head())
-print("\nOverall accuracy:",
-      (all_df["Emotion"] == all_df["Predicted"]).mean())
