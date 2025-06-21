@@ -80,6 +80,8 @@ df["Sentiment_fine"] = sentiments
 
 sentiment_counts2 = df["Sentiment_fine"].value_counts()
 
+df.to_csv("final_sentiment.csv", index=False)
+
 
 print("##############")
 print(sentiment_counts)
