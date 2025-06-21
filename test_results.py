@@ -3,7 +3,7 @@ import torch
 from transformers import pipeline
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast, pipeline
 
-df = pd.read_csv("test123.csv")
+df = pd.read_csv("Tweets.csv")
 
 device = 0 if torch.cuda.is_available() else -1
 print("Using GPU" if device == 0 else "Using CPU")
@@ -11,7 +11,7 @@ print("Using GPU" if device == 0 else "Using CPU")
 sentiment_pipeline = pipeline("sentiment-analysis", device=device)
 
 # Apply sentiment analysis to the 'text' column
-df["Predicted_Sentiment"] = df["comment_text"].apply(lambda x: sentiment_pipeline(x)[0]['label'])
+df["Predicted_Sentiment"] = df["text"].apply(lambda x: sentiment_pipeline(x)[0]['label'])
 # Count how many are predicted as POSITIVE or NEGATIVE
 sentiment_counts = df["Predicted_Sentiment"].value_counts()
 print(sentiment_counts)
@@ -31,7 +31,7 @@ sentiment_pipe = pipeline(
 )
 
 
-df["Sentiment_fine"] = df["comment_text"].apply(lambda x: sentiment_pipe(x)[0]['label'])
+df["Sentiment_fine"] = df["text"].apply(lambda x: sentiment_pipe(x)[0]['label'])
 
 sentiment_counts2 = df["Sentiment_fine"].value_counts()
 print(sentiment_counts2)    
