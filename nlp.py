@@ -17,7 +17,7 @@ import re
 device = 0 if torch.cuda.is_available() else -1
 print("Using GPU" if device == 0 else "Using CPU")
 
-df = pd.read_csv("/kaggle/input/expanded-equity-corpus4-csv/expanded_equity_corpus.csv")
+df = pd.read_csv("expanded_equity_corpus.csv")
 
 # Display the first few rows
 print(df.head(2))
