@@ -314,7 +314,7 @@ print(sentiment_counts2)
 #df = pd.read_csv("final_sentiment.csv")
 
 # search some names 
-keywords = ["latisha", "diego", "sebastian", "my mother"]
+keywords = ["latisha", "diego", "sebastian", "my mother","Jasmine","Alia", "Ebony"]
 pattern = re.compile(r"|".join(keywords), re.IGNORECASE)
 
 # Filter rows where 'text' contains any of the keywords
