@@ -39,9 +39,7 @@ df["Predicted_Sentiment"] = sentiments
 
 # Count how many are predicted as POSITIVE or NEGATIVE
 sentiment_counts = df["Predicted_Sentiment"].value_counts()
-print(sentiment_counts)
 
-print("##############")
 # Load the tokenizer and model from the saved directory
 model_path = "saved_models/baseline_model"
 
@@ -81,4 +79,9 @@ for i, row in df.iterrows():
 df["Sentiment_fine"] = sentiments
 
 sentiment_counts2 = df["Sentiment_fine"].value_counts()
+
+
+print("##############")
+print(sentiment_counts)
+print("##############")
 print(sentiment_counts2)    
