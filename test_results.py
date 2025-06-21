@@ -56,7 +56,29 @@ sentiment_pipe = pipeline(
 )
 
 
-df["Sentiment_fine"] = df["text"].apply(lambda x: sentiment_pipe(x)[0]['label'])
+#df["Sentiment_fine"] = df["text"].apply(lambda x: sentiment_pipe(x)[0]['label'])
+sentiments = []
+# Iterate through the DataFrame rows safely
+for i, row in df.iterrows():
+    text = row['text']
+    try:
+        # Skip empty or non-string values
+        if not isinstance(text, str) or text.strip() == "":
+            sentiments.append("UNKNOWN")
+            print(f"[{i}] Empty or invalid text")
+            continue
+        
+        result = sentiment_pipe(text[:512])[0]  # Truncate to 512 tokens (safe for most models)
+        label = result['label']
+        sentiments.append(label)
+        print(f"[{i}] Text: {text}\n   Sentiment: {label}\n")
+
+    except Exception as e:
+        sentiments.append("ERROR")
+        print(f"[{i}] Error processing text: {text}\n   Error: {e}\n")
+        
+# Add the results to your DataFrame
+df["Sentiment_fine"] = sentiments
 
 sentiment_counts2 = df["Sentiment_fine"].value_counts()
 print(sentiment_counts2)    
