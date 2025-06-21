@@ -13,6 +13,7 @@ sentiment_pipeline = pipeline("sentiment-analysis", device=device)
 # Apply sentiment analysis to the 'text' column
 #df["Predicted_Sentiment"] = df["text"].apply(lambda x: sentiment_pipeline(x)[0]['label'])
 
+sentiments = []
 # Iterate through the DataFrame rows safely
 for i, row in df.iterrows():
     text = row['text']
