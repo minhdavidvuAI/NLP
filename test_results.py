@@ -11,7 +11,31 @@ print("Using GPU" if device == 0 else "Using CPU")
 sentiment_pipeline = pipeline("sentiment-analysis", device=device)
 
 # Apply sentiment analysis to the 'text' column
-df["Predicted_Sentiment"] = df["text"].apply(lambda x: sentiment_pipeline(x)[0]['label'])
+#df["Predicted_Sentiment"] = df["text"].apply(lambda x: sentiment_pipeline(x)[0]['label'])
+
+# Iterate through the DataFrame rows safely
+for i, row in df.iterrows():
+    text = row['text']
+    try:
+        # Skip empty or non-string values
+        if not isinstance(text, str) or text.strip() == "":
+            sentiments.append("UNKNOWN")
+            print(f"[{i}] Empty or invalid text")
+            continue
+        
+        result = sentiment_pipeline(text[:512])[0]  # Truncate to 512 tokens (safe for most models)
+        label = result['label']
+        sentiments.append(label)
+        print(f"[{i}] Text: {text}\n   Sentiment: {label}\n")
+
+    except Exception as e:
+        sentiments.append("ERROR")
+        print(f"[{i}] Error processing text: {text}\n   Error: {e}\n")
+
+# Add the results to your DataFrame
+df["Predicted_Sentiment"] = sentiments
+
+
 # Count how many are predicted as POSITIVE or NEGATIVE
 sentiment_counts = df["Predicted_Sentiment"].value_counts()
 print(sentiment_counts)
